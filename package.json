@@ -1,0 +1,23 @@
+{
+  "name": "cli-employee-tracker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NTKonzen/CLI-Employee-Tracker.git"
+  },
+  "author": "Nicholas Konzen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/NTKonzen/CLI-Employee-Tracker/issues"
+  },
+  "homepage": "https://github.com/NTKonzen/CLI-Employee-Tracker#readme",
+  "dependencies": {
+    "inquirer": "^7.3.3",
+    "mysql": "^2.18.1"
+  }
+}
