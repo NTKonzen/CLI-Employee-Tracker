@@ -11,7 +11,7 @@ const connection = mysql.createConnection({
     database: 'employee_db'
 });
 
-const initOptions = ['View All Employees', 'View All Roles', 'View All Departments', 'View All Employees by Department'];
+const initOptions = ['View All Employees', 'View All Roles', 'View All Departments', 'View All Employees by Department', 'Exit Program'];
 
 console.log(wordart);
 
@@ -66,8 +66,6 @@ async function mainRoute(route) {
                 console.log('')
                 console.table(result)
                 res();
-
-                // main();
             });
         } else if (route.value === initOptions[3]) {
             const departments = await getDepartments();
@@ -86,7 +84,9 @@ async function mainRoute(route) {
             })
             console.table(await getByDepartment(department.value));
 
-            // res();
+            res();
+        } else {
+            connection.end();
         }
     })
 };
