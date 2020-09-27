@@ -11,7 +11,8 @@ const connection = mysql.createConnection({
     database: 'employee_db'
 });
 
-const initOptions = ['View All Employees', 'View All Roles', 'View All Departments', 'View All Employees by Department', 'Exit Program'];
+const initOptions = ['View All Employees', 'View All Roles', 'View All Departments', 'View All Employees by Department', 'Update Employee', 'Exit Program'];
+const employeeUpdateChoices = ['Role', 'Manager', 'Name'];
 
 console.log(wordart);
 
@@ -69,7 +70,7 @@ async function mainRoute(route) {
             });
         } else if (route.value === initOptions[3]) {
             const departments = await getDepartments();
-            const departmentsArray = []
+            const departmentsArray = [];
 
             console.log('');
             departments.forEach(val => {
@@ -83,6 +84,83 @@ async function mainRoute(route) {
                 message: 'Select a Department'
             })
             console.table(await getByDepartment(department.value));
+
+            res();
+        } else if (route.value === initOptions[4]) {
+            const employees = await getEmployees();
+            const employeeArray = [];
+
+            employees.forEach(val => {
+                employeeArray.push({ name: `${val.first_name} ${val.last_name} ID: ${val.employee_id}`, value: { id: val.employee_id, first_name: val.first_name, last_name: val.last_name } })
+            });
+
+            const employee = await inquirer.prompt({
+                name: 'value',
+                type: 'list',
+                choices: employeeArray,
+                message: 'Which employee did you want to update?'
+            });
+
+            const propsToUpdate = await inquirer.prompt({
+                name: 'value',
+                type: 'list',
+                choices: employeeUpdateChoices,
+                message: 'What properties do you want to update on this employee?'
+            });
+
+            switch (propsToUpdate.value) {
+                case 'Role':
+                    const roles = await getRolesByEmployeeId(employee.value.id);
+                    const rolesArray = [];
+                    roles.forEach(roleObj => {
+                        rolesArray.push({ name: `${roleObj.title}`, value: roleObj.role_id })
+                    });
+
+                    const roleToTake = await inquirer.prompt({
+                        name: 'value',
+                        type: 'list',
+                        choices: rolesArray,
+                        message: 'Which role would you like to move the employee to?'
+                    });
+
+                    await updateEmployeeRole(roleToTake.value, employee.value.id)
+                    break;
+
+                case 'Manager':
+                    const possibleManagers = await getCoworkersById(employee.value.id);
+                    const managersArray = [];
+
+                    possibleManagers.forEach(managerObj => {
+                        managersArray.push({ name: `${managerObj.first_name} ${managerObj.last_name} ID: ${managerObj.employee_id}`, value: managerObj.role_id })
+                    });
+
+                    managersArray.push({ name: 'No Manager', value: null })
+
+                    const newManager = await inquirer.prompt({
+                        name: 'id',
+                        type: 'list',
+                        choices: managersArray,
+                        message: 'Which coworker would you like to assign as this employee\'s new manager?'
+                    });
+
+                    updateEmployeeManager(newManager.id, employee.value.id);
+                    break;
+
+                case 'Name':
+                    console.log(employee)
+
+                    let newName = await inquirer.prompt({
+                        name: 'value',
+                        type: 'input',
+                        message: `You are editing ${employee.value.first_name} ${employee.value.last_name}\nEnter the new first and last name of the employee separated by a space\n`
+                    });
+
+                    newName = newName.value.split(' ')
+
+                    updateEmployeeName(newName, employee.value.id)
+
+                    break;
+            }
 
             res();
         } else {
@@ -99,7 +177,17 @@ function getDepartments() {
             res(result);
         })
     })
-}
+};
+
+function getEmployees() {
+    return new Promise((res, rej) => {
+        connection.query('Select employee_id, first_name, last_name FROM employees', (err, result) => {
+            if (err) throw err;
+
+            res(result);
+        })
+    })
+};
 
 function getByDepartment(department) {
     return new Promise((res, rej) => {
@@ -123,6 +211,84 @@ function getByDepartment(department) {
 
             res(result);
         })
+    })
+};
+
+function updateEmployeeRole(newRoleId, id) {
+    return new Promise((res, rej) => {
+        connection.query('UPDATE employees, roles SET employees.role_id = ? WHERE employees.employee_id = ? AND roles.role_id = employees.employee_id', [newRoleId, id], (err, result) => {
+            if (err) throw err;
+
+            res(result);
+        })
+    })
+};
+
+function updateEmployeeManager(newManagerId, id) {
+    return new Promise((res, rej) => {
+        connection.query('UPDATE employees, roles SET employees.manager_id = ? WHERE employees.employee_id = ?',
+            [newManagerId, id],
+            (err, result) => {
+                if (err) throw err;
+
+                res(result);
+            })
+    })
+};
+
+function updateEmployeeName(newNameArray, employeeId) {
+    newNameArray.push(employeeId);
+    return new Promise((res, rej) => {
+        connection.query('UPDATE employees SET employees.first_name = ?, employees.last_name = ? WHERE employees.employee_id = ?', newNameArray, (err, result) => {
+            if (err) throw err;
+
+            res(result);
+        })
+    })
+}
+
+function getRolesByEmployeeId(id) {
+    return new Promise((res, rej) => {
+        connection.query(`
+        SELECT r.title, r.role_id
+        FROM roles r, employees e, departments departments
+        WHERE r.department_id = (
+            SELECT r.department_id
+            FROM roles r, employees e, departments d
+            WHERE e.employee_id = ?
+                AND r.role_id = e.role_id
+                AND r.department_id = d.department_id
+        )
+    GROUP BY role_id`, [id], (err, result) => {
+            if (err) throw err;
+
+            res(result);
+        })
+    });
+};
+
+function getCoworkersById(id) {
+    return new Promise((res, rej) => {
+        connection.query(`
+            SELECT e.first_name, e.last_name, e.employee_id, e.role_id FROM employees e 
+	            WHERE e.role_id IN (SELECT r.role_id
+                    FROM roles r, employees e, departments departments
+                    WHERE r.department_id = (
+                        SELECT r.department_id
+                        FROM roles r, employees e, departments d
+                        WHERE e.employee_id = ?
+                            AND r.role_id = e.role_id
+                            AND r.department_id = d.department_id
+                    )
+                    GROUP BY role_id
+                )
+                AND e.employee_id != ?`,
+            [id, id],
+            (err, result) => {
+                if (err) throw err;
+
+                res(result);
+            })
     })
 }
 
