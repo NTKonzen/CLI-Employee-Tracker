@@ -254,6 +254,15 @@ async function mainRoute(route) {
 
             res();
 
+        } else if (route.value === initOptions[7]) {
+            const newDepartment = await inquirer.prompt({
+                name: 'name',
+                type: 'input',
+                message: 'What do you want to all the new department?'
+            });
+
+            await createNewDepartment(newDepartment.name);
+            res();
         } else {
             connection.end();
         }
@@ -290,12 +299,24 @@ function createNewEmployee(first, last, role, manager) {
                 res(result);
             })
     })
-}
+};
 
 function createNewRole(title, salary, department) {
     return new Promise((res, rej) => {
         connection.query('INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)',
             [title, salary, department],
+            (err, result) => {
+                if (err) throw err;
+
+                res(result);
+            })
+    })
+};
+
+function createNewDepartment(name) {
+    return new Promise((res, rej) => {
+        connection.query('INSERT INTO departments (name) VALUES (?)',
+            [name],
             (err, result) => {
                 if (err) throw err;
 
