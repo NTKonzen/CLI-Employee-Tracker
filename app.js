@@ -170,8 +170,7 @@ async function mainRoute(route) {
                 message: 'Enter the new employee\'s first and last name separated by a space\n'
             })
 
-            newName = newName.name.split(' ')
-            console.log(newName)
+            newName = newName.name.split(' ');
 
             const departments = await getDepartments();
             const departmentChoicesArray = []
@@ -221,6 +220,40 @@ async function mainRoute(route) {
 
             res();
 
+        } else if (route.value === initOptions[6]) {
+            const departments = await getDepartments();
+            const departmentChoicesArray = []
+
+            departments.forEach(departmentObj => {
+                departmentChoicesArray.push({ name: `${departmentObj.name}`, value: departmentObj.department_id })
+            })
+
+            const whichDepartment = await inquirer.prompt({
+                name: 'department_id',
+                type: 'list',
+                choices: departmentChoicesArray,
+                message: 'Which department do you want to add the new role to?'
+            });
+
+            const newRoleName = await inquirer.prompt({
+                name: 'name',
+                type: 'input',
+                message: 'What do you want to call this new role?\n'
+            });
+
+            const newRoleSalary = await inquirer.prompt({
+                name: 'salary',
+                type: 'input',
+                message: 'What salary do you want to set for this role?\n'
+            });
+            newRoleSalary.salary += '.00';
+            newRoleSalary.salary = parseInt(newRoleSalary.salary)
+            console.log(newRoleSalary.salary)
+
+            createNewRole(newRoleName.name, newRoleSalary.salary, whichDepartment.department_id)
+
+            res();
+
         } else {
             connection.end();
         }
@@ -251,6 +284,18 @@ function createNewEmployee(first, last, role, manager) {
     return new Promise((res, rej) => {
         connection.query('INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES(?, ?, ?, ?)',
             [first, last, role, manager],
+            (err, result) => {
+                if (err) throw err;
+
+                res(result);
+            })
+    })
+}
+
+function createNewRole(title, salary, department) {
+    return new Promise((res, rej) => {
+        connection.query('INSERT INTO roles (title, salary, department_id) VALUES (?, ?, ?)',
+            [title, salary, department],
             (err, result) => {
                 if (err) throw err;
 
