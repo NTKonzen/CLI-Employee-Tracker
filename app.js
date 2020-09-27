@@ -11,7 +11,7 @@ const connection = mysql.createConnection({
     database: 'employee_db'
 });
 
-const initOptions = ['View All Employees', 'View All Roles', 'View All Departments', 'View All Employees by Department', 'Update Employee', 'Exit Program'];
+const initOptions = ['View All Employees', 'View All Roles', 'View All Departments', 'View All Employees by Department', 'Update Employee', 'Add New Employee', 'Add New Role', 'Add New Department', 'Exit Program'];
 const employeeUpdateChoices = ['Role', 'Manager', 'Name'];
 
 console.log(wordart);
@@ -24,7 +24,7 @@ function testConnection() {
             res();
         });
     })
-}
+};
 
 async function mainRoute(route) {
     return new Promise(async (res, rej) => {
@@ -163,6 +163,64 @@ async function mainRoute(route) {
             }
 
             res();
+        } else if (route.value === initOptions[5]) {
+            let newName = await inquirer.prompt({
+                name: 'name',
+                type: 'input',
+                message: 'Enter the new employee\'s first and last name separated by a space\n'
+            })
+
+            newName = newName.name.split(' ')
+            console.log(newName)
+
+            const departments = await getDepartments();
+            const departmentChoicesArray = []
+
+            departments.forEach(departmentObj => {
+                departmentChoicesArray.push({ name: `${departmentObj.name}`, value: departmentObj.department_id })
+            })
+
+            const whichDepartment = await inquirer.prompt({
+                name: 'department_id',
+                type: 'list',
+                choices: departmentChoicesArray,
+                message: 'Which department do you want to assign the new employee to?'
+            })
+
+            const availableRoles = await getRolesByDepartmentId(whichDepartment.department_id);
+            const rolesChoicesArray = [];
+
+            availableRoles.forEach(role => {
+                rolesChoicesArray.push({ name: `${role.title}`, value: role.role_id })
+            })
+
+            const whichRole = await inquirer.prompt({
+                name: 'role_id',
+                type: 'list',
+                choices: rolesChoicesArray,
+                message: 'Which role do you want to assign the new employee to?'
+            });
+
+            const possibleManagers = await getEmployeesByDepartmentId(whichDepartment.department_id);
+            const managersChoicesArray = [];
+
+            possibleManagers.forEach(manager => {
+                managersChoicesArray.push({ name: `${manager.first_name} ${manager.last_name} ID: ${manager.employee_id}`, value: manager.employee_id })
+            })
+
+            managersChoicesArray.push({ name: 'No Manager', val: null })
+
+            const whichManager = await inquirer.prompt({
+                name: 'manager_id',
+                type: 'list',
+                choices: managersChoicesArray,
+                message: 'Who do you want to assign as the new employee\'s manager?'
+            });
+
+            await createNewEmployee(newName[0], newName[1], whichRole.role_id, whichManager.manager_id)
+
+            res();
+
         } else {
             connection.end();
         }
@@ -188,6 +246,18 @@ function getEmployees() {
         })
     })
 };
+
+function createNewEmployee(first, last, role, manager) {
+    return new Promise((res, rej) => {
+        connection.query('INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES(?, ?, ?, ?)',
+            [first, last, role, manager],
+            (err, result) => {
+                if (err) throw err;
+
+                res(result);
+            })
+    })
+}
 
 function getByDepartment(department) {
     return new Promise((res, rej) => {
@@ -267,6 +337,21 @@ function getRolesByEmployeeId(id) {
     });
 };
 
+function getRolesByDepartmentId(id) {
+    return new Promise((res, rej) => {
+        connection.query(`
+            SELECT d.department_id, r.role_id, r.title FROM departments d, roles r
+	            WHERE d.department_id = r.department_id
+                AND d.department_id = ?`,
+            [id],
+            (err, result) => {
+                if (err) throw err;
+
+                res(result)
+            })
+    })
+}
+
 function getCoworkersById(id) {
     return new Promise((res, rej) => {
         connection.query(`
@@ -284,6 +369,22 @@ function getCoworkersById(id) {
                 )
                 AND e.employee_id != ?`,
             [id, id],
+            (err, result) => {
+                if (err) throw err;
+
+                res(result);
+            })
+    })
+}
+
+function getEmployeesByDepartmentId(id) {
+    return new Promise((res, rej) => {
+        connection.query(`
+            SELECT e.employee_id, e.first_name, e.last_name FROM departments d, roles r, employees e
+	            WHERE d.department_id = r.department_id
+                AND d.department_id = ?
+                AND e.role_id = r.role_id`,
+            [id],
             (err, result) => {
                 if (err) throw err;
 
