@@ -355,7 +355,7 @@ function getByDepartment(department) {
 
 function updateEmployeeRole(newRoleId, id) {
     return new Promise((res, rej) => {
-        connection.query('UPDATE employees, roles SET employees.role_id = ? WHERE employees.employee_id = ? AND roles.role_id = employees.employee_id', [newRoleId, id], (err, result) => {
+        connection.query('UPDATE employees, roles SET employees.role_id = ? WHERE employees.employee_id = ? AND roles.role_id = employees.role_id', [newRoleId, id], (err, result) => {
             if (err) throw err;
 
             res(result);
