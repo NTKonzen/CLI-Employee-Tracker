@@ -1,3 +1,5 @@
+DROP DATABASE IF EXISTS employee_db;
+
 CREATE SCHEMA
 `employee_db` ;
 

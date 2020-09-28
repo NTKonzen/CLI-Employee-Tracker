@@ -211,7 +211,8 @@ async function mainRoute(route) {
                 managersChoicesArray.push({ name: `${manager.first_name} ${manager.last_name} ID: ${manager.employee_id}`, value: manager.employee_id })
             })
 
-            managersChoicesArray.push({ name: 'No Manager', val: null })
+            managersChoicesArray.push({ name: 'No Manager', value: null })
+            console.log(managersChoicesArray)
 
             const whichManager = await inquirer.prompt({
                 name: 'manager_id',
