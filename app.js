@@ -36,6 +36,7 @@ async function mainRoute(route) {
                 e.last_name "Last Name",
                 e.manager_id "Manager ID",
                 r.title "Role",
+                r.salary "Salary",
                 d.name "Department"
             FROM
 	            employees e,
@@ -44,7 +45,7 @@ async function mainRoute(route) {
             WHERE 
             	e.role_id = r.role_id
                 AND r.department_id = d.department_id
-            ORDER BY e.employee_id;
+            ORDER BY e.employee_id
             `,
                 (err, result) => {
                     if (err) throw err;
@@ -53,15 +54,18 @@ async function mainRoute(route) {
                     res();
                 });
         } else if (route.value === initOptions[1]) {
-            connection.query('SELECT * FROM roles', (err, result) => {
-                if (err) throw err;
+            connection.query(`SELECT r.title "Title", r.salary "Salary", d.name "Department" 
+            FROM roles r, departments d
+            WHERE d.department_id = r.department_id`,
+                (err, result) => {
+                    if (err) throw err;
 
-                console.log('')
-                console.table(result)
-                res();
-            });
+                    console.log('')
+                    console.table(result)
+                    res();
+                });
         } else if (route.value === initOptions[2]) {
-            connection.query('SELECT * FROM departments', (err, result) => {
+            connection.query('SELECT d.name "Department Name" FROM departments d', (err, result) => {
                 if (err) throw err;
 
                 console.log('')
@@ -334,6 +338,7 @@ function getByDepartment(department) {
             e.last_name "Last Name", 
             e.manager_id "Manager ID", 
             r.title "Role", 
+            r.salary "Salary",
             d.name "Department" 
         FROM 
 	        employees e, 
