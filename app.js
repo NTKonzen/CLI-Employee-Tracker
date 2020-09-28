@@ -151,7 +151,6 @@ async function mainRoute(route) {
                     break;
 
                 case 'Name':
-                    console.log(employee)
 
                     let newName = await inquirer.prompt({
                         name: 'value',
@@ -212,7 +211,6 @@ async function mainRoute(route) {
             })
 
             managersChoicesArray.push({ name: 'No Manager', value: null })
-            console.log(managersChoicesArray)
 
             const whichManager = await inquirer.prompt({
                 name: 'manager_id',
@@ -253,7 +251,6 @@ async function mainRoute(route) {
             });
             newRoleSalary.salary += '.00';
             newRoleSalary.salary = parseInt(newRoleSalary.salary)
-            console.log(newRoleSalary.salary)
 
             createNewRole(newRoleName.name, newRoleSalary.salary, whichDepartment.department_id)
 
