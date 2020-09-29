@@ -30,6 +30,7 @@ This is a command line interface program that assists the user in keeping track 
 1. Follow the instructions presented in your command prompt
 1. When you're ready to exit hit enter on 'Exit Program'
 
+Watch the tutorial [here](https://youtu.be/P8-wGqVaaqc)!
 
 ### Contributors
 
